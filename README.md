@@ -1,37 +1,49 @@
-# Customer Churn Analysis — IBM Telco Dataset
+# Customer Churn Prediction — IBM Telco Dataset
 
-Exploratory data analysis identifying the strongest drivers of customer churn in the IBM Telco Customer Churn dataset, as a first phase toward a churn prediction model.
+End-to-end churn analysis on the IBM Telco Customer Churn dataset: exploratory analysis to identify churn drivers, followed by classification models to predict churn probability per customer.
 
 ## Dataset
 
-The [IBM Telco Customer Churn dataset](https://www.kaggle.com/datasets/blastchar/telco-customer-churn) (Kaggle) — one row per customer, with account, service, and billing attributes plus a `Churn` (Yes/No) label.
+The [IBM Telco Customer Churn dataset](https://www.kaggle.com/datasets/blastchar/telco-customer-churn) — one row per customer, with account, service, and billing attributes plus a `Churn` (Yes/No) label. ~7,000 customers, ~27% churn rate (imbalanced).
 
-## What this notebook covers
+## 1. Exploratory Data Analysis (`customer_churn_eda.ipynb`)
 
-1. **Data cleaning** — converts `TotalCharges` from string to numeric, handles resulting missing values, drops the non-predictive `customerID` column.
-2. **Exploratory analysis** — churn distribution, and churn broken out by contract type, internet service, online security/tech support, paperless billing, and payment method.
-3. **Churn-rate tables** — computes churn % by category to rank which features separate churners from non-churners most strongly.
-4. **Correlation analysis** — relationship between tenure, monthly charges, and total charges.
-5. **Modeling prep** — binary-encodes the target and one-hot encodes categorical features, staging the dataset for a classification model.
+- Cleans `TotalCharges` (stored as text with blanks) and drops the non-predictive `customerID`.
+- Breaks down churn by contract type, internet service, online security/tech support, paperless billing, and payment method.
+- Computes churn-rate tables per category and a correlation heatmap of the numeric features.
 
-## Key findings
-
+**Key findings:**
 - **Month-to-month contracts** churn at a much higher rate than one- or two-year contracts.
 - Customers **without online security or tech support** churn more.
-- **Paperless billing** and certain payment methods (electronic check) correlate with higher churn.
-- `TotalCharges` and `tenure` are strongly correlated, as expected (charges accumulate over time), while `MonthlyCharges` adds independent signal.
+- **Paperless billing** and electronic-check payment correlate with higher churn.
 
-## Status
+## 2. Modeling (`churn_modeling.py`)
 
-This is the EDA / churn-driver-identification phase. The dataset is fully cleaned and encoded and ready for the next step: training and evaluating a classification model (e.g. logistic regression, random forest, or a small neural network) to predict churn probability per customer.
+Trained two classifiers on the one-hot-encoded, 80/20 train-test split (class-weighted to handle the ~27% churn imbalance):
+
+| Model | Accuracy | ROC AUC | F1 (churn class) | Recall (churn class) |
+|---|---|---|---|---|
+| Random Forest | **74.8%** | **0.839** | 0.62 | 0.78 |
+| Logistic Regression | 72.6% | 0.835 | 0.61 | 0.80 |
+
+Class weighting was used deliberately: in churn prediction, missing an at-risk customer (false negative) is usually costlier than a false alarm, so both models are tuned to catch ~78-80% of actual churners (recall) rather than optimizing for raw accuracy alone.
+
+**Top predictive features (Random Forest):** `tenure`, `TotalCharges`, having a **two-year contract**, `MonthlyCharges`, **fiber-optic internet**, and paying by **electronic check** — consistent with the EDA findings above.
+
+## Files
+
+- `customer_churn_eda.ipynb` — data cleaning and exploratory analysis.
+- `churn_modeling.py` — model training and evaluation.
+- `WA_Fn-UseC_-Telco-Customer-Churn.csv` — source dataset.
 
 ## Dependencies
 
-- Python 3, pandas, numpy, matplotlib, seaborn
+- Python 3, pandas, numpy, scikit-learn, matplotlib, seaborn
 
 ## Usage
 
 ```bash
-pip install pandas numpy matplotlib seaborn
-jupyter notebook customer_churn_eda.ipynb
+pip install pandas numpy scikit-learn matplotlib seaborn
+jupyter notebook customer_churn_eda.ipynb   # EDA
+python churn_modeling.py                    # train & evaluate models
 ```
